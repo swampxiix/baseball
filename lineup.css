@@ -3,11 +3,15 @@ body {
     font-size: 1em;
     }
 
-.in {
+.in, .in2 {
     padding: 20px;
     }
 
-#excl {
-    margin: 20px 0px;
+#lockbutton {
+    margin-bottom: 20px;
+    }
+
+.excb {
+    margin-left: 20px;
     }
 

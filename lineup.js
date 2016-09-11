@@ -12,12 +12,13 @@ var POSITIONS6 = ["P", "C", "1B", "2B", "SS", "3B",  ];
 
 var EXCLUDE_POSNS = ["P", "C", "1B"];
 
-var PLAYERS = ["#1 Keenan", "#2 E.J.", "#3 Cole", "#4 Sean", "#5 Dylan", "#6 Landon", "#7 Alex", "#8 Colin", "#9 Jordan",];
+var PLAYERS = ["Keenan (#1)", "E.J. (#2)", "Cole (#3)", "Sean (#4)", "Dylan (#5)", "Landon (#6)", "Alex (#7)", "Colin (#8)", "Jordan (#9)",];
+
+var SAVER = {};
 
 /* ######################################################
     INIT */
 
-$("#in1").html('Ready...');
 $("#lock").hide();
 
 function show_checkboxes () {
@@ -35,18 +36,19 @@ function show_checkboxes () {
 show_checkboxes();
 
 function show_exclusions () {
-    var strs = [];
+    var strs = ['<table>'];
     var i;
     for (i = 0; i < PLAYERS.length; i++) {
         var player = PLAYERS[i];
+        strs.push('<tr><td>' + player + '</td><td>');
         var j;
         for (j = 0; j < EXCLUDE_POSNS.length; j++) {
             var exclposn = EXCLUDE_POSNS[j];
             var chkbxid = player+'_'+exclposn
             strs.push('<label for="'+chkbxid+'" class="excb"><input type="checkbox" name="excl" value="'+chkbxid+'" id="'+chkbxid+'"> '+exclposn+'</label>')
         };
-        strs.push('<br>')
-    var txt = '<h2>Exclusions</h2>' + strs.join('');
+        strs.push('</td></tr>');
+    var txt = '<h2>Exclusions</h2>' + strs.join('') + '</table>';
     $("#excl").html(txt);
     };
 };
@@ -167,6 +169,8 @@ function get_rosters (allplayers) {
             var lineup = list_of_lineups[i]; // {'P': 'kidname', 'C': 'kidname'}
             var inning = i+1;
             var selector = '#in' + inning;
+            var SAVERkey = 'inning' + inning;
+            SAVER[SAVERkey] = lineup;
             $(selector).append("<p>");
             $(selector).append("<h2> Inning " + inning + "</h2>");
             var j;
@@ -187,6 +191,7 @@ function get_rosters (allplayers) {
 
 function get_batting_order (allplayers) {
     var batlist = pick_names_out_of_a_hat(allplayers);
+    SAVER['batting'] = batlist;
     var batjoin = batlist.join('<br>');
     var bathtml = '<p><h2>Batting</h2>' + batjoin + '</p>';
     $('#batting').html(bathtml)
@@ -233,7 +238,6 @@ $("#lineup").click(function() {
     get_rosters(allplayers);
     get_batting_order(allplayers);
     $("#lock").show();
-
 });
 
 $("#lock").click(function() {
@@ -242,6 +246,34 @@ $("#lock").click(function() {
     });
     $("#lineup").hide();
     $("#lock").hide();
+    $("#players").hide();
+    $("#excl").hide();
+    save_lineup(SAVER);
 });
+
+/* ######################################################
+    AJAX CALLS */
+
+function save_lineup (SAVER) {
+    jsonsaver = JSON.stringify(SAVER);
+    $.ajax({
+        url: '/wk/bb/save_lineup',
+        type: 'post',
+        data: {stuff: jsonsaver},
+        cache: false
+    })
+    .done(function(data) {
+        var results = JSON.parse(data);
+        var url = 'http://www.eringary.com/baseball/' + results['filename'];
+        var link = '<a href="' + url + '">' + url + '</a>';
+        var yaytxt = '<b>Saved</b>. The URL for this lineup is:<br>' + link;
+        $("#lockbutton").html(yaytxt);
+    })
+    .fail(function (xhr, status, error) {
+        var failure = 'Error: ' + JSON.stringify(error) + ' Status: ' + JSON.stringify(status);
+        alert(failure);
+    });
+
+};
 
 });
